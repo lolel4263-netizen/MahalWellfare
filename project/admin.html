@@ -1,0 +1,1084 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Panel – Mahal Welfare Services</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --blue:   #0D2B6B;
+      --orange: #FF6B00;
+      --white:  #FFFFFF;
+      --light:  #F4F7FF;
+      --text:   #1a1a2e;
+      --muted:  #5a6a8a;
+      --radius: 10px;
+      --danger: #cc2200;
+      --success: #0a7c3e;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Poppins', sans-serif; background: var(--light); color: var(--text); min-height: 100vh; }
+    input, textarea, select, button { font-family: inherit; }
+    .hidden { display: none !important; }
+
+    .btn { display: inline-block; padding: 12px 28px; border-radius: 50px; font-weight: 700; font-size: 0.9rem; cursor: pointer; border: none; transition: all 0.2s; }
+    .btn-blue { background: var(--blue); color: var(--white); }
+    .btn-orange { background: var(--orange); color: var(--white); }
+    .btn-outline { background: transparent; color: var(--blue); border: 2px solid var(--blue); }
+    .btn-danger { background: var(--danger); color: var(--white); }
+    .btn-sm { padding: 7px 16px; font-size: 0.8rem; }
+    .btn:hover { opacity: 0.88; transform: translateY(-1px); }
+    .login-error { color: var(--danger); font-size: 0.82rem; margin-top: 8px; }
+
+    /* ========== ADMIN LAYOUT ========== */
+    #admin-panel { display: none; }
+    .admin-header {
+      background: var(--blue);
+      color: var(--white);
+      padding: 0 24px;
+      height: 60px;
+      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 100;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+    }
+    .admin-header h1 { font-size: 1rem; }
+    .admin-header span { font-size: 0.75rem; opacity: 0.65; margin-left: 10px; }
+    .admin-layout { display: flex; min-height: calc(100vh - 60px); }
+    .sidebar {
+      width: 220px; background: var(--white);
+      border-right: 1px solid #e0e8f0;
+      padding: 20px 0;
+      position: sticky; top: 60px;
+      height: calc(100vh - 60px);
+      overflow-y: auto;
+      flex-shrink: 0;
+    }
+    @media (max-width: 700px) {
+      .sidebar { width: 100%; position: static; height: auto; border-right: none; border-bottom: 1px solid #e0e8f0; }
+      .admin-layout { flex-direction: column; }
+    }
+    .sidebar-link {
+      display: block;
+      padding: 11px 20px;
+      font-size: 0.88rem;
+      color: var(--muted);
+      cursor: pointer;
+      border-left: 3px solid transparent;
+      transition: all 0.15s;
+    }
+    .sidebar-link:hover { color: var(--blue); background: var(--light); }
+    .sidebar-link.active { color: var(--blue); font-weight: 700; border-left-color: var(--orange); background: var(--light); }
+    .sidebar-section { font-size: 0.7rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; padding: 16px 20px 6px; }
+    .main-content { flex: 1; padding: 32px; overflow-y: auto; }
+
+    /* ========== SECTION PANELS ========== */
+    .panel { display: none; }
+    .panel.active { display: block; }
+    .panel-title { font-size: 1.3rem; font-weight: 700; color: var(--blue); margin-bottom: 6px; }
+    .panel-desc  { font-size: 0.85rem; color: var(--muted); margin-bottom: 24px; }
+    .card {
+      background: var(--white);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 12px rgba(13,43,107,0.07);
+    }
+    .card h3 { font-size: 1rem; color: var(--blue); margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid #e0e8f0; }
+
+    /* Form elements */
+    .form-row { margin-bottom: 16px; }
+    .form-row label { display: block; font-size: 0.82rem; font-weight: 600; color: var(--blue); margin-bottom: 6px; }
+    .form-row input[type="text"],
+    .form-row input[type="email"],
+    .form-row input[type="tel"],
+    .form-row input[type="url"],
+    .form-row input[type="number"],
+    .form-row textarea,
+    .form-row select {
+      width: 100%; padding: 10px 14px;
+      border: 2px solid #e0e8f0; border-radius: 8px;
+      font-size: 0.9rem; outline: none;
+      transition: border-color 0.2s;
+    }
+    .form-row input:focus, .form-row textarea:focus, .form-row select:focus { border-color: var(--blue); }
+    .form-row textarea { min-height: 90px; resize: vertical; }
+    .form-hint { font-size: 0.75rem; color: var(--muted); margin-top: 4px; }
+
+    /* Grid helpers */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 540px) { .grid-2 { grid-template-columns: 1fr; } }
+
+    /* Repeatable items */
+    .repeat-item {
+      background: var(--light);
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 12px;
+      position: relative;
+    }
+    .repeat-item .item-title {
+      font-weight: 600; color: var(--blue); font-size: 0.88rem; margin-bottom: 10px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .delete-btn {
+      background: none; border: none; color: var(--danger);
+      font-size: 1.1rem; cursor: pointer; padding: 2px 6px;
+      border-radius: 4px; transition: background 0.15s;
+    }
+    .delete-btn:hover { background: rgba(204,34,0,0.08); }
+    .add-btn {
+      background: var(--light); color: var(--blue);
+      border: 2px dashed #c0ceee; border-radius: 8px;
+      padding: 10px; width: 100%; text-align: center;
+      font-size: 0.85rem; font-weight: 600; cursor: pointer;
+      transition: all 0.15s;
+    }
+    .add-btn:hover { border-color: var(--blue); background: #edf2ff; }
+
+    /* Save bar */
+    .save-bar {
+      display: flex; align-items: center; gap: 12px;
+      margin-top: 20px; flex-wrap: wrap;
+    }
+    .save-status { font-size: 0.82rem; }
+    .save-status.ok   { color: var(--success); }
+    .save-status.err  { color: var(--danger); }
+
+    /* Results table */
+    .results-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    .results-table th { background: var(--blue); color: var(--white); padding: 10px 12px; text-align: left; }
+    .results-table td { padding: 10px 12px; border-bottom: 1px solid #e0e8f0; }
+    .results-table tr:hover td { background: var(--light); }
+    .rank-badge {
+      display: inline-block; padding: 2px 10px; border-radius: 50px;
+      font-weight: 700; font-size: 0.75rem;
+      background: var(--orange); color: var(--white);
+    }
+    .score-bar-wrap { display: flex; align-items: center; gap: 8px; }
+    .score-bar { height: 6px; border-radius: 3px; background: #e0e8f0; flex: 1; }
+    .score-fill { height: 100%; border-radius: 3px; background: var(--orange); }
+
+    /* Tab bar within panel */
+    .tab-bar { display: flex; gap: 4px; margin-bottom: 20px; flex-wrap: wrap; }
+    .tab-btn {
+      padding: 8px 18px; border-radius: 50px; font-size: 0.82rem; font-weight: 600;
+      cursor: pointer; border: 2px solid #e0e8f0; background: var(--white); color: var(--muted);
+      transition: all 0.15s;
+    }
+    .tab-btn.active { background: var(--blue); color: var(--white); border-color: var(--blue); }
+
+    /* Spinner */
+    .spinner { width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.4); border-top-color: var(--white); border-radius: 50%; animation: spin 0.8s linear infinite; display: inline-block; vertical-align: middle; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Correct answer selector */
+    .answer-sel { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+    .ans-opt {
+      padding: 5px 14px; border-radius: 50px; font-size: 0.78rem; font-weight: 600;
+      cursor: pointer; border: 2px solid #c0ceee; background: var(--white); color: var(--muted);
+      transition: all 0.15s;
+    }
+    .ans-opt.selected { background: var(--blue); color: var(--white); border-color: var(--blue); }
+  </style>
+</head>
+<body>
+
+<!-- =============================================
+     ADMIN PANEL
+     ============================================= -->
+<div id="admin-panel" style="display:block;">
+  <div class="admin-header">
+    <div>
+      <h1>⚙️ Admin Panel – Mahal Welfare Services</h1>
+      <span>Logged in as Admin</span>
+    </div>
+    <button class="btn btn-outline" style="color:white; border-color:rgba(255,255,255,0.4); font-size:0.8rem;" onclick="location.href='index.html'">← Back to Site</button>
+  </div>
+
+  <div class="admin-layout">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="sidebar-section">General</div>
+      <div class="sidebar-link active" onclick="showPanel('p-general')">🏠 Organization</div>
+      <div class="sidebar-link" onclick="showPanel('p-about')">📖 About Us</div>
+      <div class="sidebar-link" onclick="showPanel('p-team')">👥 Team</div>
+      <div class="sidebar-section">Content</div>
+      <div class="sidebar-link" onclick="showPanel('p-counters')">📊 Counters</div>
+      <div class="sidebar-link" onclick="showPanel('p-timeline')">📅 Timeline</div>
+      <div class="sidebar-link" onclick="showPanel('p-testimonials')">💬 Testimonials</div>
+      <div class="sidebar-section">Quiz</div>
+      <div class="sidebar-link" onclick="showPanel('p-rules')">🛣️ 3F Rules</div>
+      <div class="sidebar-link" onclick="showPanel('p-quiz-info')">ℹ️ Quiz Info</div>
+      <div class="sidebar-link" onclick="showPanel('p-prizes')">🏆 Prizes</div>
+      <div class="sidebar-link" onclick="showPanel('p-questions')">❓ Questions</div>
+      <div class="sidebar-section">Media</div>
+      <div class="sidebar-link" onclick="showPanel('p-gallery')">🖼️ Gallery</div>
+      <div class="sidebar-section">Contact</div>
+      <div class="sidebar-link" onclick="showPanel('p-contact')">📞 Contact</div>
+      <div class="sidebar-section">Results</div>
+      <div class="sidebar-link" onclick="showPanel('p-results'); loadResults()">📈 Results</div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+
+      <!-- ===== ORGANIZATION ===== -->
+      <div class="panel active" id="p-general">
+        <div class="panel-title">🏠 Organization Information</div>
+        <div class="panel-desc">Change the organization name, logo, and basic details.</div>
+        <div class="card">
+          <h3>Basic Details</h3>
+          <div class="form-row"><label>Organization Name</label><input type="text" id="f-orgName" /></div>
+          <div class="form-row"><label>Logo URL (image link)</label><input type="url" id="f-logoUrl" placeholder="https://..." /><div class="form-hint">Direct link from Google Drive, Imgur, or any image hosting.</div></div>
+          <div class="form-row"><label>Hero Tagline</label><textarea id="f-heroTagline"></textarea></div>
+        </div>
+        <div class="save-bar">
+          <button class="btn btn-blue" onclick="saveSection(['orgName','logoUrl','heroTagline'])">💾 Save</button>
+          <span class="save-status" id="ss-general"></span>
+        </div>
+      </div>
+
+      <!-- ===== ABOUT US ===== -->
+      <div class="panel" id="p-about">
+        <div class="panel-title">📖 About Us</div>
+        <div class="panel-desc">Change the About section text and vision.</div>
+        <div class="card">
+          <h3>About Text</h3>
+          <div class="form-row"><label>About Image URL</label><input type="url" id="f-aboutImgUrl" /></div>
+          <div class="form-row"><label>About Text</label><textarea id="f-aboutText" style="min-height:120px;"></textarea></div>
+          <div class="form-row"><label>Vision Quote</label><textarea id="f-aboutVision"></textarea></div>
+          <div class="form-row"><label>Who We Are Text</label><textarea id="f-whoText"></textarea></div>
+        </div>
+        <div class="save-bar">
+          <button class="btn btn-blue" onclick="saveSection(['aboutImgUrl','aboutText','aboutVision','whoText'])">💾 Save</button>
+          <span class="save-status" id="ss-about"></span>
+        </div>
+      </div>
+
+      <!-- ===== TEAM ===== -->
+      <div class="panel" id="p-team">
+        <div class="panel-title">👥 Team Members</div>
+        <div class="panel-desc">Add or update team member information.</div>
+        <div id="team-editor"></div>
+        <button class="add-btn" onclick="addTeamMember()">+ Add Team Member</button>
+        <div class="save-bar">
+          <button class="btn btn-blue" onclick="saveTeam()">💾 Save Team</button>
+          <span class="save-status" id="ss-team"></span>
+        </div>
+      </div>
+
+      <!-- ===== COUNTERS ===== -->
+      <div class="panel" id="p-counters">
+        <div class="panel-title">📊 Achievement Counters</div>
+        <div class="panel-desc">Change the numbers that animate on scroll.</div>
+        <div id="counters-editor"></div>
+        <button class="add-btn" onclick="addCounter()">+ Add Counter</button>
+        <div class="save-bar">
+          <button class="btn btn-blue" onclick="saveCounters()">💾 Save</button>
+          <span class="save-status" id="ss-counters"></span>
+        </div>
+      </div>
+
+      <!-- ===== TIMELINE ===== -->
+      <div class="panel" id="p-timeline">
+        <div class="panel-title">📅 Timeline</div>
+        <div class="panel-desc">Add or update year-by-year events.</div>
+        <div id="timeline-editor"></div>
+        <button class="add-btn" onclick="addTimelineItem()">+ Add Event</button>
+        <div class="save-bar">
+          <button class="btn btn-blue" onclick="saveTimeline()">💾 Save</button>
+          <span class="save-status" id="ss-timeline"></span>
+        </div>
+      </div>
+
+      <!-- ===== TESTIMONIALS ===== -->
+      <div class="panel" id="p-testimonials">
+        <div class="panel-title">💬 Testimonials</div>
+        <div class="panel-desc">Add or update people's feedback.</div>
+        <div id="testimonials-editor"></div>
+        <button class="add-btn" onclick="addTestimonial()">+ Add Testimonial</button>
+        <div class="save-bar">
+          <button class="btn btn-blue" onclick="saveTestimonials()">💾 Save</button>
+          <span class="save-status" id="ss-testimonials"></span>
+        </div>
+      </div>
+
+      <!-- ===== 3F RULES ===== -->
+      <div class="panel" id="p-rules">
+        <div class="panel-title">🛣️ 3F Rules</div>
+        <div class="panel-desc">Change the text for the three F rules.</div>
+        <div id="rules-editor"></div>
+        <div class="save-bar">
+          <button class="btn btn-blue" onclick="saveRules()">💾 Save</button>
+          <span class="save-status" id="ss-rules"></span>
+        </div>
+      </div>
+
+      <!-- ===== QUIZ INFO ===== -->
+      <div class="panel" id="p-quiz-info">
+        <div class="panel-title">ℹ️ Quiz Information</div>
+        <div class="panel-desc">Change the quiz details and last date.</div>
+        <div class="card">
+          <div class="form-row"><label>Last Date</label><input type="text" id="f-deadline" placeholder="31 December 2025" /></div>
+          <div class="form-row"><label>Quiz Rules (shown in Info section)</label><textarea id="f-infoRules"></textarea></div>
+        </div>
+        <div class="save-bar">
+          <button class="btn btn-blue" onclick="saveSection(['deadline','infoRules'])">💾 Save</button>
+          <span class="save-status" id="ss-quiz-info"></span>
+        </div>
+      </div>
+
+      <!-- ===== PRIZES ===== -->
+      <div class="panel" id="p-prizes">
+        <div class="panel-title">🏆 Prizes</div>
+        <div class="panel-desc">Change the Top 5 prize information.</div>
+        <div id="prizes-editor"></div>
+        <button class="add-btn" onclick="addPrize()">+ Add Prize</button>
+        <div class="form-row" style="margin-top:16px;">
+          <label>Prizes Note (small note below prizes)</label>
+          <input type="text" id="f-prizesNote" />
+        </div>
+        <div class="save-bar">
+          <button class="btn btn-blue" onclick="savePrizes()">💾 Save</button>
+          <span class="save-status" id="ss-prizes"></span>
+        </div>
+      </div>
+
+      <!-- ===== QUESTIONS ===== -->
+      <div class="panel" id="p-questions">
+        <div class="panel-title">❓ Quiz Questions</div>
+        <div class="panel-desc">Add, edit, or remove questions. Select the correct answer (A/B/C/D). Scoring is done server-side.</div>
+        <div class="card" style="background:#fff8f0; border:1px solid var(--orange);">
+          <strong>⚠️ Important:</strong> After selecting correct answers and clicking "Save Questions", the <code>ANSWER_KEY</code> in Apps Script Script Properties will be updated automatically. Scoring will reflect the new answers immediately.
+        </div>
+        <div id="questions-editor"></div>
+        <button class="add-btn" onclick="addQuestion()">+ Add Question</button>
+        <div class="save-bar">
+          <button class="btn btn-blue" onclick="saveQuestions()">💾 Save Questions</button>
+          <span class="save-status" id="ss-questions"></span>
+        </div>
+      </div>
+
+      <!-- ===== GALLERY ===== -->
+      <div class="panel" id="p-gallery">
+        <div class="panel-title">🖼️ Gallery</div>
+        <div class="panel-desc">Change photo URLs, labels, and dates. Use Google Drive or Imgur for hosting.</div>
+        <div id="gallery-editor"></div>
+        <button class="add-btn" onclick="addGalleryItem()">+ Add Photo</button>
+        <div class="save-bar">
+          <button class="btn btn-blue" onclick="saveGallery()">💾 Save</button>
+          <span class="save-status" id="ss-gallery"></span>
+        </div>
+      </div>
+
+      <!-- ===== CONTACT ===== -->
+      <div class="panel" id="p-contact">
+        <div class="panel-title">📞 Contact Information</div>
+        <div class="panel-desc">Change email, phone, address, and social media links.</div>
+        <div class="card">
+          <div class="form-row"><label>Email</label><input type="email" id="f-contactEmail" /></div>
+          <div class="form-row"><label>Phone</label><input type="tel" id="f-contactPhone" /></div>
+          <div class="form-row"><label>Address</label><input type="text" id="f-contactAddress" /></div>
+          <div class="form-row"><label>Facebook Link</label><input type="url" id="f-fbLink" /></div>
+        </div>
+        <div class="save-bar">
+          <button class="btn btn-blue" onclick="saveSection(['contactEmail','contactPhone','contactAddress','fbLink'])">💾 Save</button>
+          <span class="save-status" id="ss-contact"></span>
+        </div>
+      </div>
+
+      <!-- ===== RESULTS ===== -->
+      <div class="panel" id="p-results">
+        <div class="panel-title">📈 Quiz Results</div>
+        <div class="panel-desc">Top 5 students' scores and full submissions list.</div>
+        <div class="tab-bar">
+          <button class="tab-btn active" onclick="switchResultTab('top5', this)">🏆 Top 5</button>
+          <button class="tab-btn" onclick="switchResultTab('all', this)">📋 All Submissions</button>
+        </div>
+        <div id="results-loading" class="hidden" style="text-align:center; padding:40px; color:var(--muted);">
+          <span class="spinner" style="border-top-color:var(--blue);"></span> Loading...
+        </div>
+        <div id="results-top5">
+          <div style="text-align:center; padding:40px; color:var(--muted);">Click "Results" in the sidebar to load.</div>
+        </div>
+        <div id="results-all" class="hidden"></div>
+      </div>
+
+    </div><!-- /main-content -->
+  </div><!-- /admin-layout -->
+</div><!-- /admin-panel -->
+
+<script>
+/* =============================================
+   CONFIG – CHANGE THIS: same URL as index.html
+   ============================================= */
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec';
+
+let adminToken = 'NO_AUTH'; // Login removed — admin.html is protected by URL obscurity only
+let localData  = {};
+
+/* =============================================
+   HTML ESCAPE HELPER
+   ============================================= */
+function esc(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/* =============================================
+   AUTO-LOAD – no login required
+   ============================================= */
+async function activateAdmin() {
+  await loadSiteData();
+  populateAllEditors();
+}
+
+/* =============================================
+   LOAD SITE DATA
+   ============================================= */
+async function loadSiteData() {
+  // Defaults — must match all 30 questions in index.html
+  localData = {
+    orgName: 'Mahal Welfare Services',
+    logoUrl: '',
+    heroTagline: 'Test your road safety knowledge and win exciting prizes!',
+    deadline: '31 December 2025',
+    aboutImgUrl: '',
+    aboutText: 'Mahal Welfare Services (Mahal Welfare Society Canada) is a dedicated NGO established in 2011 in Surrey, British Columbia.',
+    aboutVision: '"From the streets of India to the shores of British Columbia, every tree we plant, every elder we serve, and every rally we lead is a step toward a healthier, happier, and more compassionate world."',
+    whoText: 'A dream that began in 2011 — that society will change, one step at a time. Our work stretches from the streets of India to the shores of British Columbia.',
+    contactEmail: 'info@mahalwelfare.ca',
+    contactPhone: '+1 (604) 123-4567',
+    contactAddress: 'Surrey, British Columbia, Canada',
+    fbLink: 'https://facebook.com/Ngomahal',
+    prizesNote: '* In case of a tie, the student who submitted first will be given preference.',
+    infoRules: 'Each student may submit only once. Duplicate check is done by email and phone number.',
+    counters: [
+      { num: 500, suffix: '+', label: 'Students Reached' },
+      { num: 1000, suffix: '+', label: 'Trees Planted' },
+      { num: 50, suffix: '+', label: 'Seminars Held' },
+      { num: 10, suffix: '+', label: 'Partner Colleges' }
+    ],
+    timeline: [
+      { year: '2011', event: 'Organization Founded', desc: 'Mahal Welfare Services was established in Surrey, BC.' },
+      { year: '2019', event: '3F Campaign Launch', desc: 'The three principles of 3F Road Safety were introduced.' },
+      { year: '2025', event: '3F Road Safety Quiz', desc: 'Online quiz campaign launched.' }
+    ],
+    testimonials: [
+      { text: 'Mahal Welfare Services ran an amazing road safety awareness program at our college. We learned so much.', author: 'Priya Sharma', role: 'Student, Delhi University' }
+    ],
+    teamMembers: [
+      { name: 'Founder Name', role: 'Founder & President', bio: 'Vision: community welfare at every step.', emoji: '👤', photo: '' }
+    ],
+    rules3F: [
+      { f: 'F1', title: 'FIT Yourself', desc: 'Wear your helmet and safety gear.' },
+      { f: 'F2', title: 'FOLLOW Traffic Rules', desc: 'Obey red lights, speed limits, and lane discipline.' },
+      { f: 'F3', title: 'FOCUS on the Road', desc: 'No phone. No distractions. Full attention on the road.' }
+    ],
+    prizes: [
+      { rank: '🥇 1st', name: '1st Place', items: 'Helmet + T-Shirt + Campus Ambassador Position' },
+      { rank: '🥈 2nd', name: '2nd Place', items: 'Helmet + T-Shirt + Volunteer Coordinator Role' },
+      { rank: '🥉 3rd', name: '3rd Place', items: 'Helmet + T-Shirt + Organization Membership' },
+      { rank: '4th', name: '4th Place', items: 'T-Shirt + Organization Membership' },
+      { rank: '5th', name: '5th Place', items: 'T-Shirt + Certificate of Participation' }
+    ],
+    gallery: [
+      { url: '', label: 'Road Safety Rally 2024', date: 'March 2024' },
+      { url: '', label: 'Tree Planting Drive', date: 'June 2023' },
+      { url: '', label: 'Campus Outreach Program', date: 'September 2023' },
+      { url: '', label: 'Elder Care Event', date: 'December 2023' },
+      { url: '', label: '3F Campaign Launch', date: 'January 2024' },
+      { url: '', label: 'Award Ceremony', date: 'August 2024' }
+    ],
+    // All 30 questions — correct field is for admin UI only, scoring uses ANSWER_KEY in Script Properties
+    questions: [
+      { q: 'What is the most fundamental rule of road safety?', opts: ['Wear a helmet', 'Listen to music', 'Use mobile phone', 'Drive fast'], correct: 0 },
+      { q: 'For whom is wearing a helmet mandatory?', opts: ['Only above 18', 'Only below 18', 'For everyone', 'Only for males'], correct: 2 },
+      { q: 'What is the correct behavior regarding mobile phones while riding a bike?', opts: ['Perfectly fine', 'Somewhat fine', 'Sometimes okay', 'Absolutely wrong'], correct: 3 },
+      { q: 'What does a red traffic signal indicate?', opts: ['Stop', 'Go', 'Slow down', 'Honk'], correct: 0 },
+      { q: 'Where should a pedestrian walk on the road?', opts: ['In the middle of the road', 'On the footpath', 'On the left side', 'On the right side'], correct: 1 },
+      { q: 'What does the first F in 3F stand for?', opts: ['Fast', 'Fit', 'Follow', 'Focus'], correct: 1 },
+      { q: 'What does the second F in 3F stand for?', opts: ['Fast', 'Fit', 'Follow', 'Focus'], correct: 2 },
+      { q: 'What does the third F in 3F stand for?', opts: ['Fast', 'Fit', 'Follow', 'Focus'], correct: 3 },
+      { q: 'Is exceeding the speed limit ever acceptable?', opts: ['Yes, when needed', 'Never acceptable', 'Sometimes okay', 'Only on highways'], correct: 1 },
+      { q: 'What should you do when riding a bike in the rain?', opts: ['Slow down', 'Speed up', 'Remove helmet', 'Ride on footpath'], correct: 0 },
+      { q: 'What is a consequence of drunk driving?', opts: ['Car goes faster', 'Risk of accident increases', 'Saves fuel', 'Grants a licence'], correct: 1 },
+      { q: 'On Indian roads, which side do you drive on?', opts: ['Right', 'Left', 'Centre', 'No difference'], correct: 1 },
+      { q: 'What can happen if you do not wear a helmet?', opts: ['Nothing', 'You can be fined', 'You get a free car', 'Petrol becomes cheaper'], correct: 1 },
+      { q: 'What does a zebra crossing on the road signify?', opts: ['Stop the vehicle', 'Pedestrian will cross', 'Parking area', 'U-turn allowed'], correct: 1 },
+      { q: 'What happens if you jump a signal?', opts: ['You get a challan', 'You get an award', 'You get free parking', 'Nothing happens'], correct: 0 },
+      { q: 'What is the purpose of the rear-view mirror on a bike?', opts: ['For selfies', 'To see what is behind', 'To signal', 'For decoration'], correct: 1 },
+      { q: 'How much sleep should you have before driving?', opts: ['At least 6–8 hours of sleep', '2 hours is enough', 'Sleep has no effect', 'Drink energy drinks and drive'], correct: 0 },
+      { q: 'What should you do when driving in fog?', opts: ['Keep headlights off', 'Turn on fog lights', 'Drive faster', 'Drive in the middle of the road'], correct: 1 },
+      { q: 'What must you do when travelling with a child on a vehicle?', opts: ['Use a child seat or helmet', 'Push the child and make them sit', 'Nothing special', 'Seat them at the back without a belt'], correct: 0 },
+      { q: 'How should you give priority to an emergency vehicle (ambulance) on the road?', opts: ['Race with them', 'Move aside and give way', 'Keep honking', 'Block them'], correct: 1 },
+      { q: 'What does a green traffic light mean?', opts: ['Stop', 'Proceeding straight is allowed', 'U-turn', 'Parking allowed'], correct: 1 },
+      { q: 'From which side should you always overtake?', opts: ['Left', 'Right', 'From the middle', 'Either side'], correct: 1 },
+      { q: 'How many people are allowed on a bike?', opts: ['1', '2', '3', '4'], correct: 1 },
+      { q: 'What is the first thing to do when an accident occurs?', opts: ['Run away', 'Call emergency services (112)', 'Make a video', 'Start an argument'], correct: 1 },
+      { q: 'Where should you park your vehicle in a No Parking zone?', opts: ['Okay for a short while', 'Never', 'Can park at night', 'Okay on Sundays'], correct: 1 },
+      { q: 'Is road safety only the driver\'s responsibility or the pedestrian\'s too?', opts: ['Only driver\'s', 'Only pedestrian\'s', 'Both', 'Only police\'s'], correct: 2 },
+      { q: 'When should high beam headlights be used?', opts: ['Always', 'Only on empty roads at night', 'Always in the city', 'Never'], correct: 1 },
+      { q: 'When is it necessary to check tyre pressure?', opts: ['Only after an accident', 'Regularly', 'Never', 'Only in the rain'], correct: 1 },
+      { q: 'Where is Mahal Welfare Services based?', opts: ['Toronto, Ontario', 'Surrey, British Columbia', 'Vancouver, BC', 'Mumbai, India'], correct: 1 },
+      { q: 'In which year was Mahal Welfare Services founded?', opts: ['2005', '2008', '2011', '2015'], correct: 2 }
+    ]
+  };
+
+  if (!APPS_SCRIPT_URL.includes('YOUR_DEPLOYMENT_ID')) {
+    try {
+      const res  = await fetch(`${APPS_SCRIPT_URL}?action=getContent`);
+      const json = await res.json();
+      if (json.data) Object.assign(localData, json.data);
+      // Merge correct answers from localData.questions defaults if remote has no correct field
+      if (Array.isArray(json.data && json.data.questions)) {
+        // remote questions won't have .correct — keep the local defaults' correct values
+        localData.questions = localData.questions.map((def, i) => ({
+          ...def,
+          ...(json.data.questions[i] || {}),
+          correct: def.correct // always use local/admin-set correct
+        }));
+      }
+    } catch (e) {
+      console.warn('Could not load remote data:', e);
+    }
+  }
+}
+
+/* =============================================
+   POPULATE EDITORS
+   ============================================= */
+function populateAllEditors() {
+  // General
+  setVal('f-orgName',      localData.orgName);
+  setVal('f-logoUrl',      localData.logoUrl);
+  setVal('f-heroTagline',  localData.heroTagline);
+  // About
+  setVal('f-aboutImgUrl',  localData.aboutImgUrl);
+  setVal('f-aboutText',    localData.aboutText);
+  setVal('f-aboutVision',  localData.aboutVision);
+  setVal('f-whoText',      localData.whoText);
+  // Quiz info
+  setVal('f-deadline',     localData.deadline);
+  setVal('f-infoRules',    localData.infoRules);
+  // Contact
+  setVal('f-contactEmail', localData.contactEmail);
+  setVal('f-contactPhone', localData.contactPhone);
+  setVal('f-contactAddress', localData.contactAddress);
+  setVal('f-fbLink',       localData.fbLink);
+  setVal('f-prizesNote',   localData.prizesNote);
+  // Complex editors
+  renderTeamEditor();
+  renderCountersEditor();
+  renderTimelineEditor();
+  renderTestimonialsEditor();
+  renderRulesEditor();
+  renderPrizesEditor();
+  renderGalleryEditor();
+  renderQuestionsEditor();
+}
+
+function setVal(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.value = val || '';
+}
+function getVal(id) {
+  const el = document.getElementById(id);
+  return el ? el.value.trim() : '';
+}
+
+/* =============================================
+   SAVE SECTION (simple fields)
+   ============================================= */
+async function saveSection(fields, statusId) {
+  const updates = {};
+  fields.forEach(f => {
+    updates[f] = getVal('f-' + f);
+    localData[f] = updates[f];
+  });
+  if (!statusId) {
+    document.querySelectorAll('.panel.active .save-status').forEach(el => {
+      statusId = el.id;
+    });
+  }
+  await pushUpdates(updates, statusId);
+}
+
+async function pushUpdates(updates, statusId) {
+  const statusEl = statusId ? document.getElementById(statusId) : null;
+  if (statusEl) { statusEl.className = 'save-status'; statusEl.textContent = '⏳ Saving...'; }
+
+  if (APPS_SCRIPT_URL.includes('YOUR_DEPLOYMENT_ID')) {
+    if (statusEl) { statusEl.className = 'save-status ok'; statusEl.textContent = '✅ Saved locally (demo mode).'; }
+    return;
+  }
+
+  try {
+    // Use text/plain to avoid CORS preflight on Apps Script
+    const res  = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ action: 'updateContent', token: adminToken, updates })
+    });
+    const data = await res.json();
+    if (data.success) {
+      if (statusEl) { statusEl.className = 'save-status ok'; statusEl.textContent = '✅ Saved!'; }
+    } else {
+      if (statusEl) { statusEl.className = 'save-status err'; statusEl.textContent = '❌ ' + (data.error || 'Error'); }
+    }
+  } catch (e) {
+    if (statusEl) { statusEl.className = 'save-status err'; statusEl.textContent = '❌ Network error.'; }
+  }
+}
+
+/* =============================================
+   TEAM EDITOR
+   ============================================= */
+function renderTeamEditor() {
+  const wrap = document.getElementById('team-editor');
+  wrap.innerHTML = localData.teamMembers.map((m, i) => `
+    <div class="repeat-item" id="team-item-${i}">
+      <div class="item-title">
+        <span>👤 Team Member ${i + 1}</span>
+        <button class="delete-btn" onclick="deleteItem('teamMembers', ${i}, renderTeamEditor)">🗑️</button>
+      </div>
+      <div class="grid-2">
+        <div class="form-row"><label>Name</label><input type="text" data-key="name" value="${esc(m.name)}" /></div>
+        <div class="form-row"><label>Role</label><input type="text" data-key="role" value="${esc(m.role)}" /></div>
+      </div>
+      <div class="form-row"><label>Bio</label><textarea data-key="bio">${esc(m.bio)}</textarea></div>
+      <div class="form-row"><label>Photo URL</label><input type="url" data-key="photo" value="${esc(m.photo)}" /></div>
+      <div class="form-row"><label>Emoji (if no photo)</label><input type="text" data-key="emoji" value="${esc(m.emoji)}" style="max-width:80px;" /></div>
+    </div>
+  `).join('');
+}
+
+function addTeamMember() {
+  localData.teamMembers.push({ name: '', role: '', bio: '', emoji: '👤', photo: '' });
+  renderTeamEditor();
+}
+
+function saveTeam() {
+  collectRepeater('teamMembers', 'team-editor', ['name','role','bio','photo','emoji']);
+  pushUpdates({ teamMembers: localData.teamMembers }, 'ss-team');
+}
+
+/* =============================================
+   COUNTERS EDITOR
+   ============================================= */
+function renderCountersEditor() {
+  const wrap = document.getElementById('counters-editor');
+  wrap.innerHTML = localData.counters.map((c, i) => `
+    <div class="repeat-item">
+      <div class="item-title">
+        <span>📊 Counter ${i + 1}</span>
+        <button class="delete-btn" onclick="deleteItem('counters', ${i}, renderCountersEditor)">🗑️</button>
+      </div>
+      <div class="grid-2">
+        <div class="form-row"><label>Number</label><input type="number" data-key="num" value="${c.num}" /></div>
+        <div class="form-row"><label>Suffix (e.g. + or K)</label><input type="text" data-key="suffix" value="${esc(c.suffix)}" style="max-width:80px;" /></div>
+      </div>
+      <div class="form-row"><label>Label</label><input type="text" data-key="label" value="${esc(c.label)}" /></div>
+    </div>
+  `).join('');
+}
+
+function addCounter() {
+  localData.counters.push({ num: 0, suffix: '+', label: 'New Counter' });
+  renderCountersEditor();
+}
+
+function saveCounters() {
+  collectRepeater('counters', 'counters-editor', ['num','suffix','label']);
+  localData.counters = localData.counters.map(c => ({ ...c, num: parseInt(c.num) || 0 }));
+  pushUpdates({ counters: localData.counters }, 'ss-counters');
+}
+
+/* =============================================
+   TIMELINE EDITOR
+   ============================================= */
+function renderTimelineEditor() {
+  const wrap = document.getElementById('timeline-editor');
+  wrap.innerHTML = localData.timeline.map((t, i) => `
+    <div class="repeat-item">
+      <div class="item-title">
+        <span>📅 ${esc(t.year) || 'New Event'}</span>
+        <button class="delete-btn" onclick="deleteItem('timeline', ${i}, renderTimelineEditor)">🗑️</button>
+      </div>
+      <div class="grid-2">
+        <div class="form-row"><label>Year</label><input type="text" data-key="year" value="${esc(t.year)}" /></div>
+        <div class="form-row"><label>Event Name</label><input type="text" data-key="event" value="${esc(t.event)}" /></div>
+      </div>
+      <div class="form-row"><label>Description</label><textarea data-key="desc">${esc(t.desc)}</textarea></div>
+    </div>
+  `).join('');
+}
+
+function addTimelineItem() {
+  localData.timeline.push({ year: new Date().getFullYear().toString(), event: '', desc: '' });
+  renderTimelineEditor();
+}
+
+function saveTimeline() {
+  collectRepeater('timeline', 'timeline-editor', ['year','event','desc']);
+  pushUpdates({ timeline: localData.timeline }, 'ss-timeline');
+}
+
+/* =============================================
+   TESTIMONIALS EDITOR
+   ============================================= */
+function renderTestimonialsEditor() {
+  const wrap = document.getElementById('testimonials-editor');
+  wrap.innerHTML = localData.testimonials.map((t, i) => `
+    <div class="repeat-item">
+      <div class="item-title">
+        <span>💬 Testimonial ${i + 1}</span>
+        <button class="delete-btn" onclick="deleteItem('testimonials', ${i}, renderTestimonialsEditor)">🗑️</button>
+      </div>
+      <div class="form-row"><label>Quote</label><textarea data-key="text">${esc(t.text)}</textarea></div>
+      <div class="grid-2">
+        <div class="form-row"><label>Name</label><input type="text" data-key="author" value="${esc(t.author)}" /></div>
+        <div class="form-row"><label>Role / College</label><input type="text" data-key="role" value="${esc(t.role)}" /></div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function addTestimonial() {
+  localData.testimonials.push({ text: '', author: '', role: '' });
+  renderTestimonialsEditor();
+}
+
+function saveTestimonials() {
+  collectRepeater('testimonials', 'testimonials-editor', ['text','author','role']);
+  pushUpdates({ testimonials: localData.testimonials }, 'ss-testimonials');
+}
+
+/* =============================================
+   3F RULES EDITOR
+   ============================================= */
+function renderRulesEditor() {
+  const wrap = document.getElementById('rules-editor');
+  wrap.innerHTML = localData.rules3F.map((r, i) => `
+    <div class="card">
+      <h3>Rule ${i + 1} – ${esc(r.f)}</h3>
+      <div class="form-row"><label>F Code (e.g. F1)</label><input type="text" id="rule-f-${i}" value="${esc(r.f)}" /></div>
+      <div class="form-row"><label>Title (e.g. FIT Yourself)</label><input type="text" id="rule-title-${i}" value="${esc(r.title)}" /></div>
+      <div class="form-row"><label>Description</label><textarea id="rule-desc-${i}">${esc(r.desc)}</textarea></div>
+    </div>
+  `).join('');
+}
+
+function saveRules() {
+  localData.rules3F = localData.rules3F.map((_, i) => ({
+    f: document.getElementById(`rule-f-${i}`).value.trim(),
+    title: document.getElementById(`rule-title-${i}`).value.trim(),
+    desc: document.getElementById(`rule-desc-${i}`).value.trim()
+  }));
+  pushUpdates({ rules3F: localData.rules3F }, 'ss-rules');
+}
+
+/* =============================================
+   PRIZES EDITOR
+   ============================================= */
+function renderPrizesEditor() {
+  const wrap = document.getElementById('prizes-editor');
+  wrap.innerHTML = localData.prizes.map((p, i) => `
+    <div class="repeat-item">
+      <div class="item-title">
+        <span>${esc(p.rank)} – ${esc(p.name)}</span>
+        <button class="delete-btn" onclick="deleteItem('prizes', ${i}, renderPrizesEditor)">🗑️</button>
+      </div>
+      <div class="grid-2">
+        <div class="form-row"><label>Rank (e.g. 🥇 1st)</label><input type="text" data-key="rank" value="${esc(p.rank)}" /></div>
+        <div class="form-row"><label>Place Name</label><input type="text" data-key="name" value="${esc(p.name)}" /></div>
+      </div>
+      <div class="form-row"><label>Prizes</label><input type="text" data-key="items" value="${esc(p.items)}" /></div>
+    </div>
+  `).join('');
+  setVal('f-prizesNote', localData.prizesNote);
+}
+
+function addPrize() {
+  localData.prizes.push({ rank: '', name: '', items: '' });
+  renderPrizesEditor();
+}
+
+function savePrizes() {
+  collectRepeater('prizes', 'prizes-editor', ['rank','name','items']);
+  localData.prizesNote = getVal('f-prizesNote');
+  pushUpdates({ prizes: localData.prizes, prizesNote: localData.prizesNote }, 'ss-prizes');
+}
+
+/* =============================================
+   GALLERY EDITOR
+   ============================================= */
+function renderGalleryEditor() {
+  const wrap = document.getElementById('gallery-editor');
+  wrap.innerHTML = localData.gallery.map((g, i) => `
+    <div class="repeat-item">
+      <div class="item-title">
+        <span>🖼️ Photo ${i + 1}</span>
+        <button class="delete-btn" onclick="deleteItem('gallery', ${i}, renderGalleryEditor)">🗑️</button>
+      </div>
+      <div class="form-row"><label>Image URL</label><input type="url" data-key="url" value="${esc(g.url)}" placeholder="https://..." /></div>
+      <div class="grid-2">
+        <div class="form-row"><label>Label</label><input type="text" data-key="label" value="${esc(g.label)}" /></div>
+        <div class="form-row"><label>Date</label><input type="text" data-key="date" value="${esc(g.date)}" /></div>
+      </div>
+      ${g.url ? `<img src="${esc(g.url)}" style="width:120px; border-radius:6px; margin-top:8px;" />` : ''}
+    </div>
+  `).join('');
+}
+
+function addGalleryItem() {
+  localData.gallery.push({ url: '', label: '', date: '' });
+  renderGalleryEditor();
+}
+
+function saveGallery() {
+  collectRepeater('gallery', 'gallery-editor', ['url','label','date']);
+  pushUpdates({ gallery: localData.gallery }, 'ss-gallery');
+}
+
+/* =============================================
+   QUESTIONS EDITOR
+   ============================================= */
+function renderQuestionsEditor() {
+  const wrap = document.getElementById('questions-editor');
+  wrap.innerHTML = localData.questions.map((q, qi) => `
+    <div class="card" id="q-card-${qi}">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+        <h3 style="border:none; padding:0; margin:0;">Question ${qi + 1}</h3>
+        <button class="delete-btn" onclick="deleteItem('questions', ${qi}, renderQuestionsEditor)">🗑️ Remove</button>
+      </div>
+      <div class="form-row">
+        <label>Question Text</label>
+        <textarea id="qq-text-${qi}">${esc(q.q)}</textarea>
+      </div>
+      <div class="form-row">
+        <label>Options (A, B, C, D)</label>
+        ${q.opts.map((opt, oi) => `
+          <div style="display:flex; gap:8px; margin-bottom:6px; align-items:center;">
+            <span style="font-weight:700; color:var(--blue); width:20px;">${String.fromCharCode(65+oi)}.</span>
+            <input type="text" id="qq-opt-${qi}-${oi}" value="${esc(opt)}" style="flex:1;" />
+          </div>
+        `).join('')}
+      </div>
+      <div class="form-row">
+        <label>✅ Select Correct Answer</label>
+        <div class="answer-sel">
+          ${q.opts.map((opt, oi) => `
+            <button class="ans-opt ${q.correct === oi ? 'selected' : ''}"
+                    onclick="selectAnswer(${qi}, ${oi}, this)">
+              ${String.fromCharCode(65+oi)}
+            </button>
+          `).join('')}
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function selectAnswer(qi, oi, btn) {
+  localData.questions[qi].correct = oi;
+  document.querySelectorAll(`#q-card-${qi} .ans-opt`).forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+}
+
+function addQuestion() {
+  localData.questions.push({ q: '', opts: ['', '', '', ''], correct: 0 });
+  renderQuestionsEditor();
+  setTimeout(() => {
+    const last = document.querySelector(`#q-card-${localData.questions.length - 1}`);
+    if (last) last.scrollIntoView({ behavior: 'smooth' });
+  }, 100);
+}
+
+async function saveQuestions() {
+  const statusEl = document.getElementById('ss-questions');
+  if (statusEl) { statusEl.className = 'save-status'; statusEl.textContent = '⏳ Saving...'; }
+
+  // Collect from DOM
+  localData.questions = localData.questions.map((q, qi) => {
+    const text = document.getElementById(`qq-text-${qi}`)?.value.trim() || '';
+    const opts = q.opts.map((_, oi) => document.getElementById(`qq-opt-${qi}-${oi}`)?.value.trim() || '');
+    return { q: text, opts, correct: q.correct ?? 0 };
+  });
+
+  // Build answer key string (comma-separated correct indices)
+  const answerKey = localData.questions.map(q => q.correct).join(',');
+
+  // Public questions (no correct field)
+  const questionsForPublic = localData.questions.map(({ q, opts }) => ({ q, opts }));
+
+  if (APPS_SCRIPT_URL.includes('YOUR_DEPLOYMENT_ID')) {
+    if (statusEl) { statusEl.className = 'save-status ok'; statusEl.textContent = '✅ Saved locally (demo mode).'; }
+    return;
+  }
+
+  try {
+    // Step 1: Save questions (without answers) to SiteContent sheet
+    const res1 = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ action: 'updateContent', token: adminToken, updates: { questions: questionsForPublic } })
+    });
+    const d1 = await res1.json();
+    if (!d1.success) throw new Error(d1.error || 'Failed to save questions.');
+
+    // Step 2: Save answer key directly to Script Properties via dedicated action
+    const res2 = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ action: 'setAnswerKey', token: adminToken, answerKey })
+    });
+    const d2 = await res2.json();
+    if (!d2.success) throw new Error(d2.error || 'Failed to update answer key.');
+
+    if (statusEl) { statusEl.className = 'save-status ok'; statusEl.textContent = '✅ Questions and answer key saved!'; }
+  } catch (e) {
+    if (statusEl) { statusEl.className = 'save-status err'; statusEl.textContent = '❌ ' + e.message; }
+  }
+}
+
+/* =============================================
+   RESULTS LOADER
+   ============================================= */
+let resultsData = null;
+
+async function loadResults() {
+  document.getElementById('results-loading').classList.remove('hidden');
+
+  if (APPS_SCRIPT_URL.includes('YOUR_DEPLOYMENT_ID')) {
+    document.getElementById('results-loading').classList.add('hidden');
+    document.getElementById('results-top5').innerHTML = '<p style="color:var(--muted); padding:20px;">Demo mode — deploy Apps Script first to see real data.</p>';
+    return;
+  }
+
+  try {
+    const res  = await fetch(`${APPS_SCRIPT_URL}?action=getResults&token=${adminToken}`);
+    const data = await res.json();
+    document.getElementById('results-loading').classList.add('hidden');
+    if (data.error) {
+      document.getElementById('results-top5').innerHTML = `<p style="color:var(--danger);">${esc(data.error)}</p>`;
+      return;
+    }
+    resultsData = data;
+    renderResultsTop5();
+    renderResultsAll();
+  } catch (e) {
+    document.getElementById('results-loading').classList.add('hidden');
+    document.getElementById('results-top5').innerHTML = '<p style="color:var(--danger);">Failed to load. Please check your network.</p>';
+  }
+}
+
+function renderResultsTop5() {
+  if (!resultsData || !resultsData.top5) return;
+  const rows = resultsData.top5;
+  const total = rows[0]?.total || 30;
+  document.getElementById('results-top5').innerHTML = `
+    <p style="font-size:0.82rem; color:var(--muted); margin-bottom:12px;">Total Submissions: <strong>${resultsData.total || 0}</strong></p>
+    ${rows.length === 0 ? '<p style="color:var(--muted);">No submissions yet.</p>' : `
+    <table class="results-table">
+      <thead><tr><th>Rank</th><th>Name</th><th>College</th><th>Score</th><th>Wants to Join?</th><th>Contact</th></tr></thead>
+      <tbody>
+        ${rows.map((r, i) => `
+          <tr>
+            <td><span class="rank-badge">#${i+1}</span></td>
+            <td>${esc(r.name)}</td>
+            <td>${esc(r.college)}</td>
+            <td>
+              <div class="score-bar-wrap">
+                <span style="font-weight:700; color:var(--blue)">${r.score}/${total}</span>
+                <div class="score-bar"><div class="score-fill" style="width:${Math.round((r.score/total)*100)}%"></div></div>
+              </div>
+            </td>
+            <td>${esc(r.wantsToJoin)}</td>
+            <td>${esc(r.email)}<br/><span style="color:var(--muted); font-size:0.78rem;">${esc(r.phone)}</span></td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>`}
+  `;
+}
+
+function renderResultsAll() {
+  if (!resultsData || !resultsData.all) return;
+  const rows = resultsData.all;
+  const total = rows[0]?.total || 30;
+  document.getElementById('results-all').innerHTML = `
+    <p style="font-size:0.82rem; color:var(--muted); margin-bottom:12px;">Total: <strong>${resultsData.total || 0}</strong> submissions</p>
+    <div style="overflow-x:auto;">
+    <table class="results-table">
+      <thead><tr><th>#</th><th>Name</th><th>College</th><th>Email</th><th>Phone</th><th>Score</th><th>Join?</th><th>Time</th></tr></thead>
+      <tbody>
+        ${rows.map((r, i) => `
+          <tr>
+            <td>${i+1}</td>
+            <td>${esc(r.name)}</td>
+            <td>${esc(r.college)}</td>
+            <td>${esc(r.email)}</td>
+            <td>${esc(r.phone)}</td>
+            <td style="font-weight:700; color:var(--blue)">${r.score}/${total}</td>
+            <td>${esc(r.wantsToJoin)}</td>
+            <td style="font-size:0.75rem; color:var(--muted)">${new Date(r.timestamp).toLocaleString('en-CA')}</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+    </div>
+  `;
+}
+
+function switchResultTab(tab, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('results-top5').classList.toggle('hidden', tab !== 'top5');
+  document.getElementById('results-all').classList.toggle('hidden', tab !== 'all');
+}
+
+/* =============================================
+   HELPERS
+   ============================================= */
+function showPanel(id) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+}
+
+function deleteItem(arrKey, idx, rerender) {
+  if (!confirm('Are you sure you want to remove this item?')) return;
+  localData[arrKey].splice(idx, 1);
+  rerender();
+}
+
+function collectRepeater(arrKey, wrapperId, fields) {
+  const items = document.querySelectorAll(`#${wrapperId} .repeat-item`);
+  localData[arrKey] = Array.from(items).map(item => {
+    const obj = {};
+    fields.forEach(f => {
+      const el = item.querySelector(`[data-key="${f}"]`);
+      if (el) obj[f] = el.value.trim();
+    });
+    return obj;
+  });
+}
+
+/* =============================================
+   SESSION CHECK on load — auto-activate immediately
+   ============================================= */
+window.addEventListener('DOMContentLoaded', () => {
+  activateAdmin();
+});
+</script>
+</body>
+</html>
